@@ -1,87 +1,163 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './App.css'; // Make sure to import your updated CSS
 
 function App() {
+  const [jd, setJd] = useState("java_developer");
   const [file, setFile] = useState(null);
-  const [score, setScore] = useState(null);
-  const [matchedKeywords, setMatchedKeywords] = useState([]);
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [jobRole, setJobRole] = useState("java_developer");
+  const [previewURL, setPreviewURL] = useState(null);
 
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-    setScore(null);
-    setMatchedKeywords([]);
+  const handleDrop = (e) => {
+  e.preventDefault();
+  const droppedFile = e.dataTransfer.files[0];
+  if (droppedFile?.type === "application/pdf") {
+    setFile(droppedFile);
+    setPreviewURL(URL.createObjectURL(droppedFile));
+    setResult(null);
+  }
+};
+
+  const handleDragOver = (e) => {
+  e.preventDefault();
+};
+
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+    setResult(null);
   };
 
   const handleSubmit = async () => {
-    if (!file) {
-      alert("Please select a resume file.");
-      return;
-    }
-
+    if (!file) return;
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("jd", jobRole);
+    formData.append("jd", jd);
 
     setLoading(true);
-
     try {
-      const response = await axios.post("http://localhost:8080/api/upload-pdf", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
-
-      setScore(response.data.score);
-      setMatchedKeywords(response.data.matchedKeywords);
-    } catch (error) {
+      const res = await axios.post("http://localhost:8080/api/upload-pdf", formData);
+      setResult(res.data);
+    } catch (err) {
       alert("Failed to screen resume.");
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: 'Arial' }}>
-      <h2>Resume Screening Tool</h2>
+    <div className="container">
+      {/* Navbar */}
+      <div className="navbar">
+        <h1>Smart Resume Screening</h1>
+      </div>
 
-      <label>
-        Select Job Role:
-        <select value={jobRole} onChange={(e) => setJobRole(e.target.value)} style={{ marginLeft: 10 }}>
-          <option value="java_developer">Java Developer</option>
-          <option value="data_scientist">Data Scientist</option>
-        </select>
-      </label>
+      <div className="main">
+        {/* Sidebar */}
+        <div className="left-panel">
+          <h3>Upload & Select JD</h3>
+          <select value={jd} onChange={(e) => setJd(e.target.value)} className="dropdown">
+            <option value="java_developer">Java Developer</option>
+            <option value="data_scientist">Data Scientist</option>
+          </select>
+          <div
+  className="drop-zone"
+  onDrop={handleDrop}
+  onDragOver={handleDragOver}
+>
+  <p>Drag & drop your PDF here, or click to select</p>
+  <input
+    type="file"
+    accept=".pdf"
+    onChange={(e) => {
+      handleFileChange(e);
+      setPreviewURL(URL.createObjectURL(e.target.files[0]));
+    }}
+    style={{ display: 'none' }}
+    id="hiddenFileInput"
+  />
+  <label htmlFor="hiddenFileInput" className="browse-button">Browse</label>
+</div>
 
-      <br /><br />
+{previewURL && (
+  <embed
+    src={previewURL}
+    type="application/pdf"
+    width="100%"
+    height="300px"
+    style={{ borderRadius: "6px", marginTop: "10px" }}
+  />
+)}
 
-      <input type="file" accept=".pdf" onChange={handleFileChange} />
-      <button onClick={handleSubmit} style={{ marginLeft: 10 }}>Submit</button>
-
-      {loading && <p>Processing...</p>}
-
-      {score !== null && (
-        <div style={{ marginTop: 20 }}>
-          <p><strong>Match Score:</strong> {score}%</p>
-          <div style={{ background: '#ddd', borderRadius: '4px', height: '20px', width: '100%' }}>
-            <div style={{
-              height: '100%',
-              width: `${score}%`,
-              background: score > 70 ? 'green' : score > 40 ? 'orange' : 'red',
-              borderRadius: '4px',
-              transition: 'width 0.3s ease-in-out'
-            }}></div>
-          </div>
-          <p><strong>Matched Keywords:</strong></p>
-          <ul>
-            {matchedKeywords.map((word, index) => (
-              <li key={index}>{word}</li>
-            ))}
-          </ul>
+          <button onClick={handleSubmit} className="btn-submit">Submit</button>
+          {loading && <p>Analyzing...</p>}
         </div>
-      )}
+
+        {/* Results Panel */}
+        <div className="right-panel">
+          {result && (
+            <>
+              {/* Match Score */}
+              <div className="section-box">
+                <h3>Match Score</h3>
+                <div className="score-bar-bg">
+                  <div
+                    className="score-bar-fill"
+                    style={{
+                      width: `${result.score}%`,
+                      backgroundColor: result.score >= 75 ? '#28a745' : result.score >= 50 ? '#ffc107' : '#dc3545'
+                    }}
+                  >
+                    {result.score}%
+                  </div>
+                </div>
+              </div>
+
+              {/* Matched Keywords */}
+              <div className="section-box">
+                <h3>Matched Keywords</h3>
+                <ul>
+                  {result.matchedKeywords?.map((word, i) => (
+                    <li key={i}>{word}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Extracted Information */}
+              <div className="section-box">
+                <h3>Extracted Info</h3>
+                <ul>
+                  {result.extractedInfo && Object.entries(result.extractedInfo).map(([key, val], idx) => (
+                    <li key={idx}><strong>{key}:</strong> {val}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Section Content */}
+              {result.sectionsContent && (
+                <div className="section-box">
+                  <h3>Resume Sections</h3>
+                  {Object.entries(result.sectionsContent).map(([section, content], idx) => (
+                    <div key={idx}>
+                      <h4>{section.charAt(0).toUpperCase() + section.slice(1)}</h4>
+                      <pre>{content}</pre>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {result.suggestions && (
+                <div className="section-box">
+                  <h3>Suggestions</h3>
+                  <p>{result.suggestions}</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
