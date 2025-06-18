@@ -1,0 +1,43 @@
+# Java (Spring Boot)
+/target/
+/out/
+*.log
+*.class
+*.jar
+*.war
+*.iml
+/.idea/
+*.iws
+/.vscode/
+*.db
+*.DS_Store
+
+# Maven dependencies
+/.mvn/
+/.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/release.properties
+
+# React (Node.js)
+node_modules/
+build/
+dist/
+.env
+.npmrc
+package-lock.json
+yarn.lock
+
+# OS-specific
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Temporary
+*.tmp
+*.swp
